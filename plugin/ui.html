@@ -107,9 +107,9 @@
     }
   </script>
   <script>
-    const REMOTE_URL = 'ws://5.78.95.195:3055';
+    const REMOTE_URL = 'wss://figma-mcp.humanrace.ai';
     const LOCAL_URL = 'ws://localhost:3055';
-    const WS_URL = REMOTE_URL; // Use remote server IP
+    const WS_URL = REMOTE_URL; // Use Cloudflare tunnel (WSS)
     const MAX_BACKOFF = 30000;
     let ws = null;
     let backoff = 1000;
