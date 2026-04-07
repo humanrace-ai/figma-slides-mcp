@@ -107,7 +107,9 @@
     }
   </script>
   <script>
-    const PORT = 3055;
+    const TUNNEL_URL = 'wss://plasma-times-hollow-blowing.trycloudflare.com';
+    const LOCAL_URL = 'ws://localhost:3055';
+    const WS_URL = TUNNEL_URL; // Use tunnel for remote access
     const MAX_BACKOFF = 30000;
     let ws = null;
     let backoff = 1000;
@@ -124,7 +126,7 @@
     function connect() {
       setStatus('connecting', 'Connecting...');
       try {
-        ws = new WebSocket('ws://localhost:' + PORT);
+        ws = new WebSocket(WS_URL);
       } catch (e) {
         setStatus('disconnected', 'Failed to create WebSocket');
         scheduleReconnect();
