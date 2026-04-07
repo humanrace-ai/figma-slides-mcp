@@ -7,7 +7,7 @@
   "editorType": ["figma", "slides"],
   "documentAccess": "dynamic-page",
   "networkAccess": {
-    "allowedDomains": ["*"],
-    "reasoning": "WebSocket connection to local MCP server"
+    "allowedDomains": ["figma-mcp.humanrace.ai", "localhost"],
+    "reasoning": "WebSocket connection to MCP server via Cloudflare tunnel or localhost"
   }
 }
