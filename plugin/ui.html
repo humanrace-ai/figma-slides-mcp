@@ -107,13 +107,9 @@
     }
   </script>
   <script>
-    const REMOTE_URL = 'wss://figma-mcp.humanrace.ai';
-    const LOCAL_URL = 'ws://localhost:3055';
-    const WS_URL = REMOTE_URL; // Use Cloudflare tunnel (WSS)
-    const MAX_BACKOFF = 30000;
-    let ws = null;
-    let backoff = 1000;
+    const SERVER_URL = 'https://figma-mcp.humanrace.ai';
     let connected = false;
+    let polling = false;
 
     const statusEl = document.getElementById('status');
     const labelEl = document.getElementById('label');
@@ -123,51 +119,50 @@
       labelEl.textContent = text;
     }
 
-    function connect() {
-      setStatus('connecting', 'Connecting...');
+    // Send a message to the server (responses, hello)
+    async function sendToServer(data) {
       try {
-        ws = new WebSocket(WS_URL);
+        await fetch(SERVER_URL + '/respond', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
       } catch (e) {
-        setStatus('disconnected', 'Failed to create WebSocket');
-        scheduleReconnect();
-        return;
+        console.error('Send failed:', e);
       }
-
-      ws.onopen = () => {
-        connected = true;
-        backoff = 1000;
-        setStatus('connected', 'Connected');
-        // Request editor info from main thread to complete handshake
-        parent.postMessage({ pluginMessage: { type: 'getEditorInfo' } }, '*');
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          // Forward command from server to plugin main thread
-          parent.postMessage({ pluginMessage: { type: 'command', ...msg } }, '*');
-        } catch (e) {
-          console.error('Failed to parse message:', e);
-        }
-      };
-
-      ws.onclose = () => {
-        connected = false;
-        setStatus('disconnected', 'Disconnected. Retrying in ' + (backoff / 1000) + 's...');
-        scheduleReconnect();
-      };
-
-      ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
-        ws.close();
-      };
     }
 
-    function scheduleReconnect() {
-      setTimeout(() => {
-        backoff = Math.min(backoff * 2, MAX_BACKOFF);
-        connect();
-      }, backoff);
+    // Long-poll for commands from the server
+    async function poll() {
+      if (polling) return;
+      polling = true;
+      while (true) {
+        try {
+          const res = await fetch(SERVER_URL + '/poll');
+          if (!connected) {
+            connected = true;
+            setStatus('connected', 'Connected');
+            // Request editor info from main thread to complete handshake
+            parent.postMessage({ pluginMessage: { type: 'getEditorInfo' } }, '*');
+          }
+          const commands = await res.json();
+          for (const cmdStr of commands) {
+            try {
+              const msg = JSON.parse(cmdStr);
+              parent.postMessage({ pluginMessage: { type: 'command', ...msg } }, '*');
+            } catch (e) {
+              console.error('Failed to parse command:', e);
+            }
+          }
+        } catch (e) {
+          if (connected) {
+            connected = false;
+            setStatus('connecting', 'Reconnecting...');
+          }
+          // Back off on error
+          await new Promise(r => setTimeout(r, 2000));
+        }
+      }
     }
 
     // Handle messages from plugin main thread
@@ -177,9 +172,7 @@
 
       if (msg.type === 'response' || msg.type === 'hello') {
         // Forward response/hello from plugin to server
-        if (ws && connected) {
-          ws.send(JSON.stringify(msg.data));
-        }
+        sendToServer(msg.data);
       } else if (msg.type === 'renderHtml') {
         // Render HTML to PNG using html-to-image (real DOM rendering)
         var width = msg.width || 800;
@@ -315,7 +308,8 @@
       }
     };
 
-    connect();
+    setStatus('connecting', 'Connecting...');
+    poll();
   </script>
 </body>
 </html>
