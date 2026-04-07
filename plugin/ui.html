@@ -107,9 +107,9 @@
     }
   </script>
   <script>
-    const TUNNEL_URL = 'wss://plasma-times-hollow-blowing.trycloudflare.com';
+    const REMOTE_URL = 'ws://5.78.95.195:3055';
     const LOCAL_URL = 'ws://localhost:3055';
-    const WS_URL = TUNNEL_URL; // Use tunnel for remote access
+    const WS_URL = REMOTE_URL; // Use remote server IP
     const MAX_BACKOFF = 30000;
     let ws = null;
     let backoff = 1000;
