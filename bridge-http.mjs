@@ -119,8 +119,9 @@ const server = http.createServer((req, res) => {
   res.end('not found');
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`[bridge-http] HTTP polling bridge on 0.0.0.0:${PORT}`);
+const HOST = process.env.FIGMA_BRIDGE_HOST || '127.0.0.1';
+server.listen(PORT, HOST, () => {
+  console.log(`[bridge-http] HTTP polling bridge on ${HOST}:${PORT}`);
 });
 
 // Export for MCP server integration

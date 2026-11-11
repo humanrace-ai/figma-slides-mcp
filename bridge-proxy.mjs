@@ -13,6 +13,7 @@ bridge._started = true;
 bridge._wss = wss;
 wss.on('connection', (ws) => bridge._onConnection(ws));
 
-httpServer.listen(3055, '0.0.0.0', () => {
-  console.log('HTTP+WS server on 0.0.0.0:3055');
+const HOST = process.env.FIGMA_BRIDGE_HOST || '127.0.0.1';
+httpServer.listen(3055, HOST, () => {
+  console.log(`HTTP+WS server on ${HOST}:3055`);
 });
